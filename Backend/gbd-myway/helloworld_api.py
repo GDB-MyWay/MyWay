@@ -1,10 +1,3 @@
-"""Hello World API implemented using Google Cloud Endpoints.
-
-Defined here are the ProtoRPC messages needed to define Schemas for methods
-as well as those methods defined in an API.
-"""
-
-
 import endpoints
 from protorpc import messages
 from protorpc import message_types
@@ -15,7 +8,6 @@ package = 'Hello'
 
 
 class Moment(messages.Message):
-    """Greeting that stores a message."""
     name = messages.StringField(1)
     lat = messages.StringField(2)
     lon = messages.StringField(3)
@@ -23,7 +15,6 @@ class Moment(messages.Message):
     url = messages.StringField(5)
 
 class Route(messages.Message):
-    """Collection of Greetings."""
     moments = messages.MessageField(Moment, 1, repeated=True)
 
 
@@ -39,19 +30,24 @@ STORED_MOMENTS = Route(moments=[
 @endpoints.api(name='mywayapi', version='v1')
 class MyWayApi(remote.Service):
     """MyWay API v1."""
-
-    @endpoints.method(message_types.VoidMessage, Route,
-                      path='routes', http_method='GET',
-                      name='moments.listMoments')
-    def greetings_list(self, unused_request):
-        return STORED_MOMENTS
-
     ID_RESOURCE = endpoints.ResourceContainer(
             message_types.VoidMessage,
             id=messages.IntegerField(1, variant=messages.Variant.INT32))
 
+    @endpoints.method(ID_RESOURCE, Route,
+                      path='route/{id}', http_method='GET',
+                      name='moments.listMoments')
+    def greetings_list(self, unused_request):
+        try:
+            return STORED_MOMENTS
+        except(IndexError, TypeError):
+            raise endpoints.NotFoundException('Route %s not found.' %
+                                                (request.id,))
+
+    
+
     @endpoints.method(ID_RESOURCE, Moment,
-                      path='{id}', http_method='GET',
+                      path='moment/{id}', http_method='GET',
                       name='moments.getMoment')
     def greeting_get(self, request):
         try:
